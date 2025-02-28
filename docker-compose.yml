@@ -1,0 +1,19 @@
+services:
+  mensis-python:
+    build:
+      context: .
+      dockerfile: python.dockerfile
+    container_name: mensis-python
+    volumes:
+      - ./backup:/backup
+      - ./scripts:/scripts
+      - ./penetration:/penetration
+      - ./.env:/scripts/.env
+    ports:
+      - "15000:5000"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
