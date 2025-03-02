@@ -5,6 +5,7 @@ WORKDIR /scripts
 # タイムゾーンを日本時間(JST)に設定
 ENV TZ=Asia/Tokyo
 
+
 # 基本パッケージと PostgreSQL 16 のリポジトリを追加
 RUN apt-get update && apt-get install -y curl gnupg lsb-release software-properties-common tzdata && \
     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg && \
@@ -40,7 +41,7 @@ RUN curl -O https://dl.min.io/client/mc/release/linux-amd64/mc && \
     mv mc /usr/local/bin/
 
 RUN pip install --upgrade pip && \
-    pip install python-dotenv schedule
+    pip install python-dotenv schedule requests
 
 # バックアップディレクトリを作成
 RUN mkdir -p /backup/pg_dump/manual/ && \

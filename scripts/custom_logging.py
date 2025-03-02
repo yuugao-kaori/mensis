@@ -1,45 +1,47 @@
 import logging
+import os
 import sys
-from pathlib import Path
+from logging.handlers import RotatingFileHandler
 
-def setup_logger(name=None, log_file=None, level=logging.INFO):
+def setup_logger(name=None, log_file='/scripts/python.log', level=logging.INFO):
     """
-    ロガーを設定してインスタンスを返す
+    ロギング設定を行うヘルパー関数
     
     Args:
-        name (str, optional): ロガーの名前
-        log_file (str, optional): ログファイルのパス
-        level (int, optional): ログレベル
-        
+        name (str): ロガーの名前。Noneの場合はルートロガーを使用
+        log_file (str): ログファイルのパス
+        level (int): ロギングレベル
+    
     Returns:
-        logging.Logger: 設定済みのロガーインスタンス
+        Logger: 設定済みのロガーインスタンス
     """
-    # ロガーの名前が指定されていない場合はメインのロガーを使用
-    logger = logging.getLogger(name or __name__)
-    logger.setLevel(level)
+    # ディレクトリが存在しない場合は作成
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
     
-    # 既存のハンドラーをクリア
-    logger.handlers = []
+    # 指定された名前でロガーを取得
+    logger = logging.getLogger(name)
     
-    # フォーマッターの作成
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    
-    # 標準出力へのハンドラー
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    
-    # ログファイルが指定されている場合、ファイルハンドラーを追加
-    if log_file:
-        # ログディレクトリの作成
-        log_path = Path(log_file)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+    # ロガーのレベルが設定されていない場合のみ設定
+    if not logger.handlers:
+        logger.setLevel(level)
         
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        # ファイルハンドラー（ローテーション付き）
+        try:
+            file_handler = RotatingFileHandler(
+                log_file, 
+                maxBytes=5*1024*1024,  # 5MB
+                backupCount=3
+            )
+            file_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            file_handler.setFormatter(file_format)
+            logger.addHandler(file_handler)
+        except (PermissionError, IOError, OSError) as e:
+            print(f"警告: ログファイル '{log_file}' に書き込みができません: {e}", file=sys.stderr)
+        
+        # コンソールハンドラー
+        console_handler = logging.StreamHandler()
+        console_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        console_handler.setFormatter(console_format)
+        logger.addHandler(console_handler)
     
     return logger

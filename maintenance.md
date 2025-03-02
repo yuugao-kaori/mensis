@@ -13,5 +13,5 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "pg_repackと自動バックアップの基礎となる関数を追加"
+git commit -m "関数をmain.pyから呼び出せるように"
 git push
