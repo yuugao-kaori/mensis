@@ -13,5 +13,5 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "関数をmain.pyから呼び出せるように"
+git commit -m "Misskeyに対する通知を行うように"
 git push

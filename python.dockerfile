@@ -41,7 +41,7 @@ RUN curl -O https://dl.min.io/client/mc/release/linux-amd64/mc && \
     mv mc /usr/local/bin/
 
 RUN pip install --upgrade pip && \
-    pip install python-dotenv schedule requests
+    pip install python-dotenv schedule requests psutil
 
 # バックアップディレクトリを作成
 RUN mkdir -p /backup/pg_dump/manual/ && \
