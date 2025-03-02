@@ -3,8 +3,17 @@ import time
 import argparse
 from datetime import datetime
 from custom_logging import setup_logger
-from postgres import check_postgres_connection as check_pg_conn, load_env, manual_backup_postgres as manual_backup_pg
+from postgres import check_postgres_connection as check_pg_conn, load_env, manual_backup_postgres as manual_backup_pg, pgroonga_reindex as pgroonga_kensaku_reindex, auto_backup_postgres, pg_repack_all_db as pg_repack_db
 
+def pg_repack_all_db():
+    logger = setup_logger(name='pg_repack_all_db')
+    connection_info = load_env()
+    pg_repack_db(connection_info, logger)
+
+def pgroonga_reindex():
+    logger = setup_logger(name='pgroonga_reindex')
+    connection_info = load_env()
+    pgroonga_kensaku_reindex(connection_info, logger)
 
 def manual_backup_postgres():
     logger = setup_logger(name='manual_backup_postgres')
@@ -30,6 +39,9 @@ TASKS = {
     'test': test,  # ここにカンマを追加
     'check_postgres_connection': check_postgres_connection,
     'manual_backup_postgres': manual_backup_postgres,
+    'pgroonga_reindex': pgroonga_reindex,
+    'pg_repack_all_db': pg_repack_all_db
+
 }
 
 def main():
@@ -43,7 +55,10 @@ def main():
         return
 
     # スケジュール設定
-    schedule.every().day.at("03:00").do(morning_print)
+    schedule.every().day.at("03:00").do(test)
+    schedule.every().day.at("05:00").do(auto_backup_postgres)
+    schedule.every().day.at("06:00").do(pgroonga_reindex)
+    schedule.every().day.at("07:00").do(pg_repack_all_db)
 
     # スケジュール実行ループ
     while True:

@@ -13,5 +13,5 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "test"
+git commit -m "pg_repackと自動バックアップの基礎となる関数を追加"
 git push
