@@ -15,7 +15,7 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "通知内容の拡充、システムチェックの導入"
+git commit -m "PGroongaのインデックス再構築を修正、ディスク容量のチェックを厳格に"
 git push
 
 

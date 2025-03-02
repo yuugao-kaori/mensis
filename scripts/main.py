@@ -1,12 +1,14 @@
 import schedule
 import time
 import argparse
+import dotenv
 from datetime import datetime
 from custom_logging import setup_logger
 from postgres import check_postgres_connection as check_pg_conn, manual_backup_postgres as manual_backup_pg, pgroonga_reindex as pgroonga_kensaku_reindex, auto_backup_postgres as auto_backup_pg, pg_repack_all_db as pg_repack_db
 from load_env import load_env
 from notice import sendDM_misskey_notification
 from system_check import get_disk_usage, format_bytes
+import os
 
 def system_check():
     logger = setup_logger(name='system_check')
@@ -22,53 +24,78 @@ def system_check():
         logger.info(f"ディスク使用率が80%未満です。")
 
 def pg_repack_all_db():
+    dotenv.load_dotenv()
     logger = setup_logger(name='pg_repack_all_db')
-    connection_info = load_env()
-    
-    start_time = time.time()  # 開始時間を記録
-    
-    response = pg_repack_db(connection_info, logger)
-    
-    end_time = time.time()  # 終了時間を記録
-    elapsed_time = end_time - start_time  # 経過時間を計算
-    
-    # 時間を見やすいフォーマットに変換（時:分:秒）
-    hours, remainder = divmod(elapsed_time, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-    # 現在の時間を取得してフォーマット
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    if response:
-        sendDM_misskey_notification(f"PostgreSQLのテーブルの再構築が完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
-        logger.info(f"テーブルの再構築完了 - 処理時間: {time_str}")
+
+
+    PG_REPACK = os.environ.get('PG_REPACK')
+    if not PG_REPACK:
+        logger.error("PG_REPACK environment variable is not set")
+        sendDM_misskey_notification("環境変数PG_REPACKが設定されていません。")
+        return False
+    elif PG_REPACK == "True":
+
+        connection_info = load_env()
+        
+        start_time = time.time()  # 開始時間を記録
+        
+        response = pg_repack_db(connection_info, logger)
+        
+        end_time = time.time()  # 終了時間を記録
+        elapsed_time = end_time - start_time  # 経過時間を計算
+        
+        # 時間を見やすいフォーマットに変換（時:分:秒）
+        hours, remainder = divmod(elapsed_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+        # 現在の時間を取得してフォーマット
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if response:
+            sendDM_misskey_notification(f"PostgreSQLのテーブルの再構築が完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
+            logger.info(f"テーブルの再構築完了 - 処理時間: {time_str}")
+        else:
+            sendDM_misskey_notification(f"PostgreSQLのテーブルの再構築に失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
+            logger.error(f"テーブルの再構築失敗 - 処理時間: {time_str}")
     else:
-        sendDM_misskey_notification(f"PostgreSQLのテーブルの再構築に失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
-        logger.error(f"テーブルの再構築失敗 - 処理時間: {time_str}")
+        logger.info("PG_REPACK is set to false. Skipping pg_repack_all_db")
+        return False
 
 
 def pgroonga_reindex():
     logger = setup_logger(name='pgroonga_reindex')
-    connection_info = load_env()
+
+    PG_REPACK = os.environ.get('PG_PGROONGA_REINDEX')
+    if not PG_PGROONGA_REINDEX:
+        logger.error("PG_PGROONGA_REINDEX environment variable is not set")
+        sendDM_misskey_notification("環境変数PG_PGROONGA_REINDEXが設定されていません。")
+        return False
+
+    elif PG_PGROONGA_REINDEX == "True":
+        connection_info = load_env()
+        
+        start_time = time.time()  # 開始時間を記録
+        
+        response = pgroonga_kensaku_reindex(connection_info, logger)
+        
+        end_time = time.time()  # 終了時間を記録
+        elapsed_time = end_time - start_time  # 経過時間を計算
+        
+        # 時間を見やすいフォーマットに変換（時:分:秒）
+        hours, remainder = divmod(elapsed_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+        # 現在の時間を取得してフォーマット
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if response:
+            sendDM_misskey_notification(f"PGroongaのインデックス再構築が完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
+            logger.info(f"PGroongaインデックスの再構築完了 - 処理時間: {time_str}")
+        else:
+            sendDM_misskey_notification(f"PostgreSQLのテーブルの再構築に失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
+            logger.error(f"PGroongaインデックスの再構築に失敗 - 処理時間: {time_str}")
     
-    start_time = time.time()  # 開始時間を記録
-    
-    response = pgroonga_kensaku_reindex(connection_info, logger)
-    
-    end_time = time.time()  # 終了時間を記録
-    elapsed_time = end_time - start_time  # 経過時間を計算
-    
-    # 時間を見やすいフォーマットに変換（時:分:秒）
-    hours, remainder = divmod(elapsed_time, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-    # 現在の時間を取得してフォーマット
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    if response:
-        sendDM_misskey_notification(f"PGroongaのインデックス再構築が完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
-        logger.info(f"PGroongaインデックスの再構築完了 - 処理時間: {time_str}")
     else:
-        sendDM_misskey_notification(f"PostgreSQLのテーブルの再構築に失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}")
-        logger.error(f"PGroongaインデックスの再構築に失敗 - 処理時間: {time_str}")
+        logger.info("PG_PGROONGA_REINDEX is set to false. Skipping pgroonga_reindex")
+        return False
 
 def manual_backup_postgres():
     logger = setup_logger(name='manual_backup_postgres')
@@ -103,41 +130,63 @@ def manual_backup_postgres():
         logger.error(f"テーブルの再構築失敗 - 処理時間: {time_str}")
 
 def auto_backup_postgres(backup_type="daily"):
+
     logger = setup_logger(name='auto_backup_postgres')
-    connection_info = load_env()
     
-    disk = get_disk_usage()
-    if disk['percent'] > 90:
-        sendDM_misskey_notification(f"ディスク使用率が{disk['percent']}％です。\nバックアップは行われません。")
-        logger.warning(f"ディスク使用率が90％を超過しているため、バックアップは実行されなかった")
-        return
-
-    start_time = time.time()  # 開始時間を記録
-    
-    response, backup_size  = auto_backup_pg(connection_info, logger, backup_type)
-
-    end_time = time.time()  # 終了時間を記録
-    elapsed_time = end_time - start_time  # 経過時間を計算
-    
-    # 時間を見やすいフォーマットに変換（時:分:秒）
-    hours, remainder = divmod(elapsed_time, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-
-    disk = get_disk_usage()
-    system_check_msg = f"ディスク使用状況:\n合計容量: {format_bytes(disk['total'])}\n使用済み: {format_bytes(disk['used'])}\n空き容量: {format_bytes(disk['free'])}\n使用率: {disk['percent']}%"
-
-    # 現在の時間を取得してフォーマット
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    if response:
-
-        backup_size_formatted = format_bytes(backup_size) if backup_size else "不明"
-
-        sendDM_misskey_notification(f"Postgresの自動バックアップが完了しました。\n\nモード：{backup_type}\n現在時間：{current_time}\n処理時間: {time_str}\n出力サイズ：{backup_size_formatted}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
-        logger.info(f"テーブルの再構築完了 - 処理時間: {time_str}")
+    if backup_type is "daily":
+        GET_ENV = 'PG_BACKUP_DAILY'
+    elif backup_type is "weekly":
+        GET_ENV = 'PG_BACKUP_WEEKLY'
+    elif backup_type is "monthly": 
+        GET_ENV = 'PG_BACKUP_MONTHLY'
     else:
-        sendDM_misskey_notification(f"Postgresの自動バックアップに失敗しました。\n\nモード：{backup_type}\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
-        logger.error(f"テーブルの再構築失敗 - 処理時間: {time_str}")
+        logger.error("Invalid backup type. Please specify either 'daily', 'weekly', or 'monthly'")
+        return False
+    PG_BACKUP_DIARY = os.environ.get(GET_ENV)
+
+    if not PG_BACKUP_DIARY:
+        logger.error(f"{GET_ENV} environment variable is not set")
+        sendDM_misskey_notification(f"環境変数{GET_ENV}が設定されていません。")
+        return False
+    elif PG_BACKUP_DIARY == "True":
+
+        connection_info = load_env()
+        
+        disk = get_disk_usage()
+        if disk['percent'] > 90:
+            sendDM_misskey_notification(f"ディスク使用率が{disk['percent']}％です。\nバックアップは行われません。")
+            logger.warning(f"ディスク使用率が90％を超過しているため、バックアップは実行されなかった")
+            return
+
+        start_time = time.time()  # 開始時間を記録
+        
+        response, backup_size  = auto_backup_pg(connection_info, logger, backup_type)
+
+        end_time = time.time()  # 終了時間を記録
+        elapsed_time = end_time - start_time  # 経過時間を計算
+        
+        # 時間を見やすいフォーマットに変換（時:分:秒）
+        hours, remainder = divmod(elapsed_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+
+        disk = get_disk_usage()
+        system_check_msg = f"ディスク使用状況:\n合計容量: {format_bytes(disk['total'])}\n使用済み: {format_bytes(disk['used'])}\n空き容量: {format_bytes(disk['free'])}\n使用率: {disk['percent']}%"
+
+        # 現在の時間を取得してフォーマット
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if response:
+
+            backup_size_formatted = format_bytes(backup_size) if backup_size else "不明"
+
+            sendDM_misskey_notification(f"Postgresの自動バックアップが完了しました。\n\nモード：{backup_type}\n現在時間：{current_time}\n処理時間: {time_str}\n出力サイズ：{backup_size_formatted}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+            logger.info(f"テーブルの再構築完了 - 処理時間: {time_str}")
+        else:
+            sendDM_misskey_notification(f"Postgresの自動バックアップに失敗しました。\n\nモード：{backup_type}\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+            logger.error(f"テーブルの再構築失敗 - 処理時間: {time_str}")
+    else:
+        logger.info(f"{GET_ENV} is set to false. Skipping auto_backup_postgres")
+        return False
 
 
 
