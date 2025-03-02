@@ -86,7 +86,7 @@ def sendDM_misskey_notification(text, visibility="specified", visible_user_ids=N
 
 
 
-def post_misskey_notification(text, visibility="home", visible_user_ids=None, cw=None, local_only=False):
+def post_misskey_notification(text, visibility="public", visible_user_ids=None, cw=None, local_only=False):
     """
     Misskeyに投稿を送信する関数
     
@@ -122,11 +122,7 @@ def post_misskey_notification(text, visibility="home", visible_user_ids=None, cw
             "Content-Type": "application/json"
         }
         
-        # 可視性設定
-        if visible_user_ids is None and visibility == "specified":
-            target_user_id = os.getenv('MISSKEY_TEARGET_USER_ID')
-            visible_user_ids = [target_user_id] if target_user_id else []
-        
+       
         # ペイロードの構築
         payload = {
             "visibility": visibility,
