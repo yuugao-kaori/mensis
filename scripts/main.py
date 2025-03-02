@@ -325,7 +325,8 @@ TASKS = {
     'manual_backup_postgres': manual_backup_postgres,
     'pgroonga_reindex': pgroonga_reindex,
     'pg_repack_all_db': pg_repack_all_db,
-    'system_check': system_check
+    'system_check': system_check,
+    'daily_maintenance_report': daily_maintenance_report
 
 }
 
@@ -345,7 +346,8 @@ def main():
     schedule.every().day.at("04:00").do(pgroonga_reindex)
     schedule.every().day.at("05:00").do(auto_backup_postgres, backup_type="weekly") if datetime.now().weekday() == 6 else None
     schedule.every().day.at("06:00").do(lambda: auto_backup_postgres(backup_type="monthly") if datetime.now().day == 1 else None)
-
+    # 毎朝8時にメンテナンスレポートを送信
+    schedule.every().day.at("08:00").do(daily_maintenance_report)
 
     # スケジューラー起動をログに記録
     # 現在の時間を取得してフォーマット
