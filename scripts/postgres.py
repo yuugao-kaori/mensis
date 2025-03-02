@@ -112,8 +112,14 @@ def manual_backup_postgres(connection_info, logger):
         # 圧縮後、元のSQLファイルを削除
         os.remove(sql_file)
         logger.info(f"Compression complete. Backup saved to: {gz_file}")
+
+        # 圧縮ファイルのサイズを取得
+        file_size = gz_file.stat().st_size
+        file_size_mb = round(file_size / (1024 * 1024), 2)
+        logger.info(f"Compression complete. Backup saved to: {gz_file} (サイズ: {file_size_mb} MB)")
         
-        return True, str(gz_file)
+        
+        return True, file_size
         
     except Exception as e:
         error_msg = f"Error during database backup: {str(e)}"
@@ -199,6 +205,12 @@ def auto_backup_postgres(connection_info, logger, backup_type):
         os.remove(sql_file)
         logger.info(f"Compression complete. Backup saved to: {gz_file}")
         
+        # 圧縮ファイルのサイズを取得
+        file_size = gz_file.stat().st_size
+        file_size_mb = round(file_size / (1024 * 1024), 2)
+        logger.info(f"Compression complete. Backup saved to: {gz_file} (サイズ: {file_size_mb} MB)")
+        
+
         # 古いバックアップを削除して世代管理を行う
         # 保持する世代数
         retention_count = retention_config[backup_type]
@@ -216,7 +228,7 @@ def auto_backup_postgres(connection_info, logger, backup_type):
                 
             logger.info(f"Removed {len(files_to_delete)} old backup(s). Keeping {retention_count} most recent backups.")
         
-        return True
+        return True, file_size
         
     except Exception as e:
         error_msg = f"Error during {backup_type} database backup: {str(e)}"
@@ -279,23 +291,24 @@ def pg_repack_all_db(connection_info, logger):
 
 def pgroonga_reindex(connection_info, logger):
     """
-    pgroongaのインデックスを再構築する
+    CREATE INDEX idx_note_text_with_pgroonga ON note USING pgroonga (text);
+    でインデックスを作成/再作成する。
     
     Args:
         connection_info (dict): PostgreSQL接続情報
         logger: ロガーインスタンス
         
     Returns:
-        bool: 再構築が成功したかどうか
+        bool: インデックスの作成/再作成が成功したかどうか
     """
     try:
-        logger.info("Starting pgroonga index reindex process")
+        logger.info("Starting PGroonga index creation/recreation process")
         
         # 環境変数にパスワードを設定
         env = os.environ.copy()
         env['PGPASSWORD'] = connection_info['password']
         
-        # 1. まず、PGroongaインデックスの存在確認
+        # 1. まず既存のPGroongaインデックスを確認
         check_cmd = [
             'psql',
             f'--host={connection_info["host"]}',
@@ -304,10 +317,10 @@ def pgroonga_reindex(connection_info, logger):
             f'--dbname={connection_info["db"]}',
             '--no-password',
             '--tuples-only',
-            '-c', "SELECT indexname FROM pg_indexes WHERE indexdef LIKE '%USING pgroonga%'"
+            '-c', "SELECT indexname FROM pg_indexes WHERE indexname = 'idx_note_text_with_pgroonga'"
         ]
         
-        logger.info("Checking for PGroonga indexes...")
+        logger.info("Checking for existing idx_note_text_with_pgroonga index...")
         check_result = subprocess.run(
             check_cmd,
             env=env,
@@ -316,69 +329,71 @@ def pgroonga_reindex(connection_info, logger):
         )
         
         if check_result.returncode != 0:
-            error_msg = f"Failed to check PGroonga indexes: {check_result.stderr}"
+            error_msg = f"Failed to check existing PGroonga index: {check_result.stderr}"
             logger.error(error_msg)
             return False
         
-        # インデックス名のリストを取得
-        pgroonga_indexes = [idx.strip() for idx in check_result.stdout.strip().split('\n') if idx.strip()]
-        
-        if not pgroonga_indexes:
-            logger.info("No PGroonga indexes found in the database")
-            return True
-        
-        logger.info(f"Found {len(pgroonga_indexes)} PGroonga indexes: {', '.join(pgroonga_indexes)}")
-        
-        # 2. 各PGroongaインデックスを再構築
-        success_count = 0
-        failure_count = 0
-        
-        for index_name in pgroonga_indexes:
-            if not index_name:  # 空文字列のチェック
-                continue
-                
-            logger.info(f"Reindexing {index_name}")
-            reindex_cmd = [
+        # 2. 既存のインデックスがあれば削除
+        if check_result.stdout.strip():
+            logger.info("Found existing idx_note_text_with_pgroonga index, dropping it first")
+            drop_cmd = [
                 'psql',
                 f'--host={connection_info["host"]}',
                 f'--port={connection_info["port"]}',
                 f'--username={connection_info["user"]}',
                 f'--dbname={connection_info["db"]}',
                 '--no-password',
-                '-c', f"REINDEX INDEX {index_name}"
+                '-c', "DROP INDEX IF EXISTS idx_note_text_with_pgroonga"
             ]
             
-            # コマンドタイムアウトを設定（30分）
-            try:
-                reindex_result = subprocess.run(
-                    reindex_cmd,
-                    env=env,
-                    capture_output=True,
-                    text=True,
-                    timeout=1800  # 30分のタイムアウト
-                )
+            drop_result = subprocess.run(
+                drop_cmd,
+                env=env,
+                capture_output=True,
+                text=True
+            )
+            
+            if drop_result.returncode != 0:
+                error_msg = f"Failed to drop existing PGroonga index: {drop_result.stderr}"
+                logger.error(error_msg)
+                return False
                 
-                if reindex_result.returncode != 0:
-                    failure_count += 1
-                    error_msg = f"Failed to reindex {index_name}: {reindex_result.stderr}"
-                    logger.error(error_msg)
-                else:
-                    success_count += 1
-                    logger.info(f"Successfully reindexed {index_name}")
-                    
-            except subprocess.TimeoutExpired:
-                failure_count += 1
-                logger.error(f"Timeout occurred while reindexing {index_name}")
+            logger.info("Successfully dropped existing PGroonga index")
         
-        # 結果を報告
-        if failure_count == 0:
-            logger.info(f"All {success_count} PGroonga indexes were successfully reindexed")
+        # 3. インデックスを作成
+        logger.info("Creating PGroonga index on note.text column...")
+        create_cmd = [
+            'psql',
+            f'--host={connection_info["host"]}',
+            f'--port={connection_info["port"]}',
+            f'--username={connection_info["user"]}',
+            f'--dbname={connection_info["db"]}',
+            '--no-password',
+            '-c', "CREATE INDEX idx_note_text_with_pgroonga ON note USING pgroonga (text)"
+        ]
+        
+        try:
+            create_result = subprocess.run(
+                create_cmd,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=7200  # 2時間のタイムアウト
+            )
+            
+            if create_result.returncode != 0:
+                error_msg = f"Failed to create PGroonga index: {create_result.stderr}"
+                logger.error(error_msg)
+                return False
+                
+            logger.info("Successfully created PGroonga index on note.text column")
             return True
-        else:
-            logger.warning(f"Reindex completed with issues: {success_count} successful, {failure_count} failed")
+                
+        except subprocess.TimeoutExpired:
+            logger.error("Timeout occurred while creating PGroonga index")
             return False
         
     except Exception as e:
-        error_msg = f"Error during pgroonga reindex operation: {str(e)}"
+        error_msg = f"Error during PGroonga index creation: {str(e)}"
         logger.error(error_msg)
         return False

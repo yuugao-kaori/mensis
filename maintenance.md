@@ -1,8 +1,10 @@
-docker exec -it mensis-python python main.py test
+docker exec -it mensis-python python main.py --run test
 
 docker logs mensis-python
 
 docker exec -it mensis-python bash
+
+
 
 
 git clone git@github.com:yuugao-kaori/mensis.git
@@ -13,5 +15,23 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "Misskeyに対する通知を行うように"
+git commit -m "通知内容の拡充、システムチェックの導入"
 git push
+
+
+
+
+
+SELECT
+    indexname,
+    indexdef
+FROM
+    pg_indexes
+WHERE
+    indexname = 'idx_note_text_with_pgroonga'
+    AND schemaname = 'public';
+
+
+
+
+

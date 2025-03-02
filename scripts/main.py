@@ -76,7 +76,7 @@ def manual_backup_postgres():
     
     start_time = time.time()  # 開始時間を記録
     
-    response = manual_backup_pg(connection_info, logger)
+    response,backup_size = manual_backup_pg(connection_info, logger)
 
     end_time = time.time()  # 終了時間を記録
     elapsed_time = end_time - start_time  # 経過時間を計算
@@ -92,7 +92,11 @@ def manual_backup_postgres():
     # 現在の時間を取得してフォーマット
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if response:
-        sendDM_misskey_notification(f"Postgresの手動バックアップが完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+
+        backup_size_formatted = format_bytes(backup_size) if backup_size else "不明"
+
+
+        sendDM_misskey_notification(f"Postgresの手動バックアップが完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\n出力サイズ：{backup_size_formatted}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
         logger.info(f"テーブルの再構築完了 - 処理時間: {time_str}")
     else:
         sendDM_misskey_notification(f"Postgresの手動バックアップに失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
@@ -110,7 +114,7 @@ def auto_backup_postgres(backup_type="daily"):
 
     start_time = time.time()  # 開始時間を記録
     
-    response = auto_backup_pg(connection_info, logger, backup_type)
+    response, backup_size  = auto_backup_pg(connection_info, logger, backup_type)
 
     end_time = time.time()  # 終了時間を記録
     elapsed_time = end_time - start_time  # 経過時間を計算
@@ -126,7 +130,10 @@ def auto_backup_postgres(backup_type="daily"):
     # 現在の時間を取得してフォーマット
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if response:
-        sendDM_misskey_notification(f"Postgresの自動バックアップが完了しました。\n\nモード：{backup_type}\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+
+        backup_size_formatted = format_bytes(backup_size) if backup_size else "不明"
+
+        sendDM_misskey_notification(f"Postgresの自動バックアップが完了しました。\n\nモード：{backup_type}\n現在時間：{current_time}\n処理時間: {time_str}\n出力サイズ：{backup_size_formatted}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
         logger.info(f"テーブルの再構築完了 - 処理時間: {time_str}")
     else:
         sendDM_misskey_notification(f"Postgresの自動バックアップに失敗しました。\n\nモード：{backup_type}\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
@@ -169,10 +176,11 @@ def main():
         return
 
     # スケジュール設定
-    schedule.every().day.at("03:00").do(test)
-    schedule.every().day.at("05:00").do(auto_backup_postgres)
-    schedule.every().day.at("06:00").do(pgroonga_reindex)
-    schedule.every().day.at("07:00").do(pg_repack_all_db)
+    schedule.every().day.at("02:00").do(pg_repack_all_db)
+    schedule.every().day.at("03:00").do(auto_backup_postgres, backup_type="daily")
+    schedule.every().day.at("04:00").do(pgroonga_reindex)
+    schedule.every().day.at("05:00").do(auto_backup_postgres, backup_type="weekly") if datetime.now().weekday() == 6 else None
+    schedule.every().day.at("06:00").do(lambda: auto_backup_postgres(backup_type="monthly") if datetime.now().day == 1 else None)
 
 
     # スケジューラー起動をログに記録
