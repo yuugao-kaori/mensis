@@ -11,7 +11,7 @@ from custom_logging import setup_logger
 # 以下、残りのコードは変更なし
 
 
-def sendDM_misskey_notification(text, visibility="specified", visible_user_ids=None, cw=None, local_only=false):
+def sendDM_misskey_notification(text, visibility="specified", visible_user_ids=None, cw=None, local_only=False):
     """
     Misskeyに投稿を送信する関数
     
@@ -86,7 +86,7 @@ def sendDM_misskey_notification(text, visibility="specified", visible_user_ids=N
 
 
 
-def post_misskey_notification(text, visibility="home", visible_user_ids=None, cw=None, local_only=false):
+def post_misskey_notification(text, visibility="home", visible_user_ids=None, cw=None, local_only=False):
     """
     Misskeyに投稿を送信する関数
     

@@ -133,11 +133,11 @@ def auto_backup_postgres(backup_type="daily"):
 
     logger = setup_logger(name='auto_backup_postgres')
     
-    if backup_type is "daily":
+    if backup_type == "daily":
         GET_ENV = 'PG_BACKUP_DAILY'
-    elif backup_type is "weekly":
+    elif backup_type == "weekly":
         GET_ENV = 'PG_BACKUP_WEEKLY'
-    elif backup_type is "monthly": 
+    elif backup_type == "monthly": 
         GET_ENV = 'PG_BACKUP_MONTHLY'
     else:
         logger.error("Invalid backup type. Please specify either 'daily', 'weekly', or 'monthly'")

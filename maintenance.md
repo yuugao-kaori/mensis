@@ -15,11 +15,11 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "PGroongaのインデックス再構築を修正、ディスク容量のチェックを厳格に"
+git commit -m "バグの修正、バグの恐れがあった記述の修正"
 git push
 
 
-
+ログローテ
 
 
 SELECT
