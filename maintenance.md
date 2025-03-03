@@ -15,7 +15,7 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "バグの修正、バグの恐れがあった記述の修正"
+git commit -m "レポート機能の定期実行化"
 git push
 
 

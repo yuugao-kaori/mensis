@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from custom_logging import setup_logger
 from postgres import check_postgres_connection as check_pg_conn, manual_backup_postgres as manual_backup_pg, pgroonga_reindex as pgroonga_kensaku_reindex, auto_backup_postgres as auto_backup_pg, pg_repack_all_db as pg_repack_db
 from load_env import load_env
-from notice import sendDM_misskey_notification, misskey_notification
+from notice import sendDM_misskey_notification, post_misskey_notification
 from system_check import get_disk_usage, format_bytes
 import os
 
@@ -46,12 +46,31 @@ def pg_repack_all_db():
     task_name = 'pg_repack_all_db'
 
     PG_REPACK = os.environ.get('PG_REPACK')
+
+    PG_REPACK = os.environ.get('PG_REPACK_FREQUENCY')
+    if not PG_REPACK_FREQUENCY or PG_REPACK_FREQUENCY == "everyday":
+        logger.warning("PG_REPACK_FREQUENCY environment variable is not set, using default configuration")
+        PG_REPACK_FREQUENCY = "daily"  # デフォルト値を設定
+    # Check if repack should run based on frequency setting
+    if PG_REPACK_FREQUENCY == "everyweek":
+        # Only run on Sunday (weekday 6)
+        if datetime.now().weekday() != 6:
+            logger.info("PG_REPACK_FREQUENCY is set to everyweek, but today is not Sunday. Skipping.")
+            ## 意図した挙動である（失敗ではない）ため、record_task_resultは呼び出さない
+            return False
+    if PG_REPACK_FREQUENCY == "everymonth":
+        # Only run on the 1st day of the month
+        if datetime.now().day != 1:
+            logger.info("PG_REPACK_FREQUENCY is set to everymonth, but today is not the first day of the month. Skipping.")
+            ## 意図した挙動である（失敗ではない）ため、record_task_resultは呼び出さない
+            return False
     if not PG_REPACK:
         logger.error("PG_REPACK environment variable is not set")
         sendDM_misskey_notification("環境変数PG_REPACKが設定されていません。")
         record_task_result(task_name, False, "環境変数PG_REPACKが設定されていません。")
         return False
     elif PG_REPACK == "True":
+        system_check() # メンテナンス前にディスク使用量をログに残しておく
 
         connection_info = load_env()
         
@@ -87,6 +106,25 @@ def pgroonga_reindex():
     task_name = 'pgroonga_reindex'
 
     PG_REPACK = os.environ.get('PG_PGROONGA_REINDEX')
+
+    PG_REPACK = os.environ.get('PG_PGROONGA_REINDEX_FREQUENCY')
+    if not PG_PGROONGA_REINDEX_FREQUENCY or PG_PGROONGA_REINDEX_FREQUENCY == "everyday":
+        logger.warning("PG_PGROONGA_REINDEX_FREQUENCY environment variable is not set, using default configuration")
+        PG_PGROONGA_REINDEX_FREQUENCY = "daily"  # デフォルト値を設定
+    # Check if repack should run based on frequency setting
+    if PG_PGROONGA_REINDEX_FREQUENCY == "everyweek":
+        # Only run on Sunday (weekday 6)
+        if datetime.now().weekday() != 6:
+            logger.info("PG_PGROONGA_REINDEX_FREQUENCY is set to everyweek, but today is not Sunday. Skipping.")
+            ## 意図した挙動である（失敗ではない）ため、record_task_resultは呼び出さない
+            return False
+    if PG_PGROONGA_REINDEX_FREQUENCY == "everymonth":
+        # Only run on the 1st day of the month
+        if datetime.now().day != 1:
+            logger.info("PG_PGROONGA_REINDEX_FREQUENCY is set to everymonth, but today is not the first day of the month. Skipping.")
+            ## 意図した挙動である（失敗ではない）ため、record_task_resultは呼び出さない
+            return False
+
     if not PG_PGROONGA_REINDEX:
         logger.error("PG_PGROONGA_REINDEX environment variable is not set")
         sendDM_misskey_notification("環境変数PG_PGROONGA_REINDEXが設定されていません。")
@@ -160,27 +198,17 @@ def manual_backup_postgres():
 def auto_backup_postgres(backup_type="daily"):
 
     logger = setup_logger(name='auto_backup_postgres')
-    
-    if backup_type == "daily":
-        GET_ENV = 'PG_BACKUP_DAILY'
-        task_name = 'auto_backup_daily'
-    elif backup_type == "weekly":
-        GET_ENV = 'PG_BACKUP_WEEKLY'
-        task_name = 'auto_backup_weekly'
-    elif backup_type == "monthly": 
-        GET_ENV = 'PG_BACKUP_MONTHLY'
-        task_name = 'auto_backup_monthly'
-    else:
-        logger.error("Invalid backup type. Please specify either 'daily', 'weekly', or 'monthly'")
-        return False
-    PG_BACKUP_DIARY = os.environ.get(GET_ENV)
 
-    if not PG_BACKUP_DIARY:
+    backup_type_upperd = backup_type.upper()
+    GET_ENV = f'PG_BACKUP_{backup_type_upperd}'
+    PG_BACKUP_TYPE = os.environ.get(GET_ENV)
+
+    if not PG_BACKUP_TYPE:
         logger.error(f"{GET_ENV} environment variable is not set")
         sendDM_misskey_notification(f"環境変数{GET_ENV}が設定されていません。")
         record_task_result(task_name, False, f"環境変数{GET_ENV}が設定されていません")
         return False
-    elif PG_BACKUP_DIARY == "True":
+    elif PG_BACKUP_TYPE == "True":
 
         connection_info = load_env()
         
@@ -302,7 +330,7 @@ def daily_maintenance_report():
     
     # ログに記録して通知
     logger.info(f"日次メンテナンスレポートを生成しました")
-    misskey_notification(report_message)
+    post_misskey_notification(report_message)
     return True
 
 def check_postgres_connection():
@@ -317,6 +345,11 @@ def test():
     print(f"test ok at {datetime.now()}")
     # バックアップ処理をここに実装
 
+def announcement_maintenance_start():
+    logger = setup_logger(name='announcement_maintenance_start')
+    post_misskey_notification(f"まもなく、本日2時よりメンテナンス作業を開始します。\n作業中もサーバはご利用頂けますが、応答速度の低下などが生じる可能性があります。\nご了承の程、よろしくお願いいたします。")
+    logger.info("メンテナンス作業開始のアナウンスを実行")
+
 # 利用可能なタスクの辞書
 TASKS = {
     'morning_print': morning_print,
@@ -326,7 +359,8 @@ TASKS = {
     'pgroonga_reindex': pgroonga_reindex,
     'pg_repack_all_db': pg_repack_all_db,
     'system_check': system_check,
-    'daily_maintenance_report': daily_maintenance_report
+    'daily_maintenance_report': daily_maintenance_report,
+    'announcement_maintenance_start': announcement_maintenance_start
 
 }
 
@@ -341,6 +375,7 @@ def main():
         return
 
     # スケジュール設定
+    schedule.every().day.at("01:50").do(announcement_maintenance_start)
     schedule.every().day.at("02:00").do(pg_repack_all_db)
     schedule.every().day.at("03:00").do(auto_backup_postgres, backup_type="daily")
     schedule.every().day.at("04:00").do(pgroonga_reindex)
