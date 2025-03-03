@@ -158,3 +158,13 @@
 2025-03-03 08:00:25,686 - load_env - INFO - Environment variables loaded successfully
 2025-03-03 08:00:25,686 - sendDM_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
 2025-03-03 08:00:26,060 - sendDM_misskey_notification - INFO - Notification sent successfully: 200
+2025-03-03 17:54:48,700 - load_env - INFO - Mensis 星海天測団Misskeyメンテナンスシステムが起動しました
+2025-03-03 17:54:48,700 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-03 17:54:48,703 - load_env - INFO - Environment variables loaded successfully
+2025-03-03 17:54:48,703 - sendDM_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
+2025-03-03 17:54:49,100 - sendDM_misskey_notification - INFO - Notification sent successfully: 200
+2025-03-03 18:09:22,607 - load_env - INFO - Mensis 星海天測団Misskeyメンテナンスシステムが起動しました
+2025-03-03 18:09:22,608 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-03 18:09:22,610 - load_env - INFO - Environment variables loaded successfully
+2025-03-03 18:09:22,610 - sendDM_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
+2025-03-03 18:09:22,931 - sendDM_misskey_notification - INFO - Notification sent successfully: 200

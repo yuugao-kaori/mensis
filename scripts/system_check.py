@@ -24,6 +24,12 @@ def get_disk_usage(path='/'):
         # psutilを使用した方法（より詳細な情報が取得可能）
         disk_info = psutil.disk_usage(path)
         logger.info(f"Disk usage: {disk_info}")
+        return {
+            'total': disk_info.total,
+            'used': disk_info.used,
+            'free': disk_info.free,
+            'percent': disk_info.percent
+        }
 
     except Exception as e:
         logger.error(f"Failed to get disk usage: {e}")
