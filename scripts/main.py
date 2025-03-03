@@ -346,17 +346,17 @@ def daily_maintenance_report():
                 task_status += f"- 月次バックアップ: ⚠️ 実行なし\n"
         
         # レポートメッセージの作成
-        report_message = f"""#メンテナンス実行レポート ({yesterday})
+        report_message = f"""
+メンテナンス実行レポート ({yesterday})
 
-    ## タスク実行結果
-    {task_status}
-    ## システム状況
-    {disk_status}
-    ## 現在時間
-    {current_time}
+## タスク実行結果
+{task_status}
+## システム状況
+{disk_status}
+## 現在時間
+{current_time}
 
-
-    報告者：【Mensis】 ｰ 星海天測団Misskey支部 メンテナンスシステム
+報告者：【Mensis】 ｰ 星海天測団Misskey支部 メンテナンスシステム
     """
         
         # ログに記録して通知
