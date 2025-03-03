@@ -46,8 +46,9 @@ def pg_repack_all_db():
     task_name = 'pg_repack_all_db'
 
     PG_REPACK = os.environ.get('PG_REPACK')
+    
+    PG_REPACK_FREQUENCY = os.environ.get('PG_REPACK_FREQUENCY')
 
-    PG_REPACK = os.environ.get('PG_REPACK_FREQUENCY')
     if not PG_REPACK_FREQUENCY or PG_REPACK_FREQUENCY == "everyday":
         logger.warning("PG_REPACK_FREQUENCY environment variable is not set, using default configuration")
         PG_REPACK_FREQUENCY = "daily"  # デフォルト値を設定
@@ -105,7 +106,8 @@ def pgroonga_reindex():
     logger = setup_logger(name='pgroonga_reindex')
     task_name = 'pgroonga_reindex'
 
-    PG_REPACK = os.environ.get('PG_PGROONGA_REINDEX')
+    PG_PGROONGA_REINDEX = os.environ.get('PG_PGROONGA_REINDEX')
+    PG_PGROONGA_REINDEX_FREQUENCY = os.environ.get('PG_PGROONGA_REINDEX_FREQUENCY')
 
     # Check if repack should run based on frequency setting
     if PG_PGROONGA_REINDEX_FREQUENCY == "everyweek":

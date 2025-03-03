@@ -135,20 +135,20 @@ def auto_backup_postgres(connection_info, logger, backup_type):
     Args:
         connection_info (dict): PostgreSQL接続情報
         logger: ロガーインスタンス
-        backup_type (str): バックアップタイプ ('diary', 'weekly', 'monthly')
+        backup_type (str): バックアップタイプ ('dairy', 'weekly', 'monthly')
         
     Returns:
         bool: バックアップが成功したかどうか
     """
     try:
         # バックアップタイプの検証
-        if backup_type not in ['diary', 'weekly', 'monthly']:
-            logger.error(f"Invalid backup type: {backup_type}. Must be one of: diary, weekly, monthly")
+        if backup_type not in ['dairy', 'weekly', 'monthly']:
+            logger.error(f"Invalid backup type: {backup_type}. Must be one of: dairy, weekly, monthly")
             return False
             
         # 各タイプごとの保持世代数を設定
         retention_config = {
-            'diary': 7,
+            'dairy': 7,
             'weekly': 5,
             'monthly': 12
         }
@@ -233,7 +233,9 @@ def auto_backup_postgres(connection_info, logger, backup_type):
     except Exception as e:
         error_msg = f"Error during {backup_type} database backup: {str(e)}"
         logger.error(error_msg)
-        return False
+
+        file_size = None
+        return False, file_size
 
 def pg_repack_all_db(connection_info, logger):
     """

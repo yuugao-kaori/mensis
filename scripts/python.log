@@ -168,3 +168,36 @@
 2025-03-03 18:09:22,610 - load_env - INFO - Environment variables loaded successfully
 2025-03-03 18:09:22,610 - sendDM_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
 2025-03-03 18:09:22,931 - sendDM_misskey_notification - INFO - Notification sent successfully: 200
+2025-03-04 01:50:24,023 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-04 01:50:24,062 - load_env - INFO - Environment variables loaded successfully
+2025-03-04 01:50:24,063 - post_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
+2025-03-04 01:50:24,747 - post_misskey_notification - INFO - Notification sent successfully: 200
+2025-03-04 01:50:24,748 - announcement_maintenance_start - INFO - メンテナンス作業開始のアナウンスを実行
+2025-03-04 02:00:34,154 - load_env - INFO - Mensis 星海天測団Misskeyメンテナンスシステムが起動しました
+2025-03-04 02:00:34,154 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-04 02:00:34,157 - load_env - INFO - Environment variables loaded successfully
+2025-03-04 02:00:34,157 - sendDM_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
+2025-03-04 02:00:34,759 - sendDM_misskey_notification - INFO - Notification sent successfully: 200
+2025-03-04 03:00:34,773 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-04 03:00:34,776 - load_env - INFO - Environment variables loaded successfully
+2025-03-04 03:00:34,776 - get_disk_usage - INFO - Disk usage: sdiskusage(total=420595859456, used=230488842240, free=168666681344, percent=57.7)
+2025-03-04 03:00:34,777 - auto_backup_postgres - ERROR - Invalid backup type: daily. Must be one of: diary, weekly, monthly
+2025-03-04 03:00:40,660 - load_env - INFO - Mensis 星海天測団Misskeyメンテナンスシステムが起動しました
+2025-03-04 03:00:40,661 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-04 03:00:40,663 - load_env - INFO - Environment variables loaded successfully
+2025-03-04 03:00:40,663 - sendDM_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
+2025-03-04 03:00:40,916 - sendDM_misskey_notification - INFO - Notification sent successfully: 200
+2025-03-04 04:00:43,839 - load_env - INFO - Mensis 星海天測団Misskeyメンテナンスシステムが起動しました
+2025-03-04 04:00:43,840 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-04 04:00:43,842 - load_env - INFO - Environment variables loaded successfully
+2025-03-04 04:00:43,842 - sendDM_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
+2025-03-04 04:00:44,186 - sendDM_misskey_notification - INFO - Notification sent successfully: 200
+2025-03-04 08:00:44,241 - get_disk_usage - INFO - Disk usage: sdiskusage(total=420595859456, used=230511845376, free=168643678208, percent=57.7)
+2025-03-04 08:00:44,279 - format_bytes - INFO - Formatting bytes: 420595859456
+2025-03-04 08:00:44,279 - format_bytes - INFO - Formatting bytes: 230511845376
+2025-03-04 08:00:44,279 - format_bytes - INFO - Formatting bytes: 168643678208
+2025-03-04 08:00:44,279 - daily_maintenance_report - INFO - 日次メンテナンスレポートを生成しました
+2025-03-04 08:00:44,280 - load_env - INFO - Found .env file at: /scripts/.env
+2025-03-04 08:00:44,283 - load_env - INFO - Environment variables loaded successfully
+2025-03-04 08:00:44,284 - post_misskey_notification - INFO - Sending notification to Misskey: https://misskey.seitendan.com/api/notes/create
+2025-03-04 08:00:44,500 - post_misskey_notification - INFO - Notification sent successfully: 200
