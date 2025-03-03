@@ -15,7 +15,7 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "バグの修正、バグの恐れがあった記述の修正"
+git commit -m "バグの修正、.envの機能拡張、README.md、LICENCEの整備"
 git push
 
 
