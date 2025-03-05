@@ -49,10 +49,6 @@ def pg_repack_all_db():
     
     PG_REPACK_FREQUENCY = os.environ.get('PG_REPACK_FREQUENCY')
 
-    if not PG_REPACK_FREQUENCY or PG_REPACK_FREQUENCY == "everyday":
-        logger.warning("PG_REPACK_FREQUENCY environment variable is not set, using default configuration")
-        PG_REPACK_FREQUENCY = "daily"  # デフォルト値を設定
-    # Check if repack should run based on frequency setting
     if PG_REPACK_FREQUENCY == "everyweek":
         # Only run on Sunday (weekday 6)
         if datetime.now().weekday() != 6:
@@ -103,6 +99,8 @@ def pg_repack_all_db():
 
 
 def pgroonga_reindex():
+    dotenv.load_dotenv()  # この行を追加
+
     logger = setup_logger(name='pgroonga_reindex')
     task_name = 'pgroonga_reindex'
 
@@ -194,6 +192,7 @@ def manual_backup_postgres():
         logger.error(f"テーブルの再構築失敗 - 処理時間: {time_str}")
 
 def auto_backup_postgres(backup_type="daily"):
+    dotenv.load_dotenv()  # この行を追加
 
     logger = setup_logger(name='auto_backup_postgres')
 
@@ -278,6 +277,8 @@ def auto_backup_postgres(backup_type="daily"):
 
 def daily_maintenance_report():
     """毎朝のメンテナンス結果レポートを生成して通知する"""
+    dotenv.load_dotenv()  # この行を追加
+
     logger = setup_logger(name='daily_maintenance_report')
 
     MAINTENANCE_REPORT = os.environ.get('MAINTENANCE_REPORT')

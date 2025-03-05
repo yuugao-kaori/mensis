@@ -1,6 +1,9 @@
 
 
 data/
+backup/
+python.log
+
 
 # Python
 __pycache__/
@@ -50,3 +53,4 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 EOL
+scripts/python.log
