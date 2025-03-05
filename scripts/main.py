@@ -46,12 +46,9 @@ def pg_repack_all_db():
     task_name = 'pg_repack_all_db'
 
     PG_REPACK = os.environ.get('PG_REPACK')
+    
+    PG_REPACK_FREQUENCY = os.environ.get('PG_REPACK_FREQUENCY')
 
-    PG_REPACK = os.environ.get('PG_REPACK_FREQUENCY')
-    if not PG_REPACK_FREQUENCY or PG_REPACK_FREQUENCY == "everyday":
-        logger.warning("PG_REPACK_FREQUENCY environment variable is not set, using default configuration")
-        PG_REPACK_FREQUENCY = "daily"  # デフォルト値を設定
-    # Check if repack should run based on frequency setting
     if PG_REPACK_FREQUENCY == "everyweek":
         # Only run on Sunday (weekday 6)
         if datetime.now().weekday() != 6:
@@ -102,10 +99,13 @@ def pg_repack_all_db():
 
 
 def pgroonga_reindex():
+    dotenv.load_dotenv()  # この行を追加
+
     logger = setup_logger(name='pgroonga_reindex')
     task_name = 'pgroonga_reindex'
 
-    PG_REPACK = os.environ.get('PG_PGROONGA_REINDEX')
+    PG_PGROONGA_REINDEX = os.environ.get('PG_PGROONGA_REINDEX')
+    PG_PGROONGA_REINDEX_FREQUENCY = os.environ.get('PG_PGROONGA_REINDEX_FREQUENCY')
 
     # Check if repack should run based on frequency setting
     if PG_PGROONGA_REINDEX_FREQUENCY == "everyweek":
@@ -192,6 +192,7 @@ def manual_backup_postgres():
         logger.error(f"テーブルの再構築失敗 - 処理時間: {time_str}")
 
 def auto_backup_postgres(backup_type="daily"):
+    dotenv.load_dotenv()  # この行を追加
 
     logger = setup_logger(name='auto_backup_postgres')
 
@@ -276,6 +277,8 @@ def auto_backup_postgres(backup_type="daily"):
 
 def daily_maintenance_report():
     """毎朝のメンテナンス結果レポートを生成して通知する"""
+    dotenv.load_dotenv()  # この行を追加
+
     logger = setup_logger(name='daily_maintenance_report')
 
     MAINTENANCE_REPORT = os.environ.get('MAINTENANCE_REPORT')
@@ -344,17 +347,17 @@ def daily_maintenance_report():
                 task_status += f"- 月次バックアップ: ⚠️ 実行なし\n"
         
         # レポートメッセージの作成
-        report_message = f"""#メンテナンス実行レポート ({yesterday})
+        report_message = f"""
+メンテナンス実行レポート ({yesterday})
 
-    ## タスク実行結果
-    {task_status}
-    ## システム状況
-    {disk_status}
-    ## 現在時間
-    {current_time}
+## タスク実行結果
+{task_status}
+## システム状況
+{disk_status}
+## 現在時間
+{current_time}
 
-
-    報告者：【Mensis】 ｰ 星海天測団Misskey支部 メンテナンスシステム
+報告者：【Mensis】 ｰ 星海天測団Misskey支部 メンテナンスシステム
     """
         
         # ログに記録して通知

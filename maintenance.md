@@ -1,4 +1,4 @@
-docker exec -it mensis-python python main.py --run test
+docker exec -it mensis-python python main.py --run manual_backup_postgres
 
 docker logs mensis-python
 
@@ -15,7 +15,7 @@ git commit -m "test"
 git push -u origin development
 
 git add ./
-git commit -m "バグの修正、.envの機能拡張、README.md、LICENCEの整備"
+git commit -m "レポートの文章を修正"
 git push
 
 
