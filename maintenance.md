@@ -1,4 +1,4 @@
-docker exec -it mensis-python python main.py --run manual_backup_postgres
+docker exec -it mensis-python python main.py --run user_file_reindex
 
 docker logs mensis-python
 
@@ -14,9 +14,7 @@ git add .
 git commit -m "test"
 git push -u origin development
 
-git add ./
-git commit -m "レポートの文章を修正"
-git push
+git add ./ && git commit -m "task_nameの追加忘れを修正" && git push
 
 
 ログローテ
