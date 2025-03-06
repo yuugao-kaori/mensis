@@ -4,7 +4,7 @@ import argparse
 import dotenv
 from datetime import datetime, timedelta
 from custom_logging import setup_logger
-from postgres import check_postgres_connection as check_pg_conn, manual_backup_postgres as manual_backup_pg, pgroonga_reindex as pgroonga_kensaku_reindex, auto_backup_postgres as auto_backup_pg, pg_repack_all_db as pg_repack_db
+from postgres import check_postgres_connection as check_pg_conn, manual_backup_postgres as manual_backup_pg, pgroonga_reindex as pgroonga_kensaku_reindex, auto_backup_postgres as auto_backup_pg, pg_repack_all_db as pg_repack_db, user_file_reindex as user_file_reindex__
 from load_env import load_env
 from notice import sendDM_misskey_notification, post_misskey_notification
 from system_check import get_disk_usage, format_bytes
@@ -39,6 +39,25 @@ def system_check():
     else:
         sendDM_misskey_notification(system_check_msg)
         logger.info(f"ディスク使用率が80%未満です。")
+
+
+def user_file_reindex():
+    dotenv.load_dotenv()
+    logger = setup_logger(name='user_file_reindex')
+    connection_info = load_env()
+    task_name = 'user_file_reindex'
+    response = user_file_reindex__(connection_info, logger)
+    if response:
+        sendDM_misskey_notification("ファイルテーブルの再構築が完了しました。")
+        record_task_result(task_name, True)
+        logger.info("ファイルテーブルの再構築完了")
+    else:
+        sendDM_misskey_notification("ファイルテーブルの再構築に失敗しました。")
+        record_task_result(task_name, False)
+        logger.error("ファイルテーブルの再構築失敗")
+
+
+    
 
 def pg_repack_all_db():
     dotenv.load_dotenv()
@@ -193,7 +212,7 @@ def manual_backup_postgres():
 
 def auto_backup_postgres(backup_type="daily"):
     dotenv.load_dotenv()  # この行を追加
-
+    task_name = f"auto_backup_{backup_type}"
     logger = setup_logger(name='auto_backup_postgres')
 
     backup_type_upperd = backup_type.upper()
@@ -404,7 +423,8 @@ TASKS = {
     'pg_repack_all_db': pg_repack_all_db,
     'system_check': system_check,
     'daily_maintenance_report': daily_maintenance_report,
-    'announcement_maintenance_start': announcement_maintenance_start
+    'announcement_maintenance_start': announcement_maintenance_start,
+    'user_file_reindex': user_file_reindex
 
 }
 

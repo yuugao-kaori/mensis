@@ -290,6 +290,56 @@ def pg_repack_all_db(connection_info, logger):
         logger.error(error_msg)
         return False
 
+def user_file_reindex(connection_info, logger):
+    """
+    ユーザーファイルに対するインデックスを作成する
+    
+    Args:
+        connection_info (dict): PostgreSQL接続情報
+        logger: ロガーインスタンス
+        
+    Returns:
+        bool: インデックス作成が成功したかどうか
+    """
+    try:
+        logger.info("Starting user file index creation process")
+        
+        # 環境変数にパスワードを設定
+        env = os.environ.copy()
+        env['PGPASSWORD'] = connection_info['password']
+        
+        # インデックス作成コマンド
+        create_cmd = [
+            'psql',
+            f'--host={connection_info["host"]}',
+            f'--port={connection_info["port"]}',
+            f'--username={connection_info["user"]}',
+            f'--dbname={connection_info["db"]}',
+            '--no-password',
+            '-c', 'CREATE INDEX IF NOT EXISTS idx_drive_file_userid_islink ON "drive_file"("userId") WHERE "isLink" = FALSE;'
+        ]
+        
+        logger.info('Creating index on "drive_file"("userId") WHERE "isLink" = FALSE...')
+        create_result = subprocess.run(
+            create_cmd,
+            env=env,
+            capture_output=True,
+            text=True
+        )
+        
+        if create_result.returncode != 0:
+            error_msg = f"Failed to create user file index: {create_result.stderr}"
+            logger.error(error_msg)
+            return False
+            
+        logger.info("Successfully created index on drive_file table")
+        return True
+        
+    except Exception as e:
+        error_msg = f"Error during user file index creation: {str(e)}"
+        logger.error(error_msg)
+        return False
+
 def pgroonga_reindex(connection_info, logger):
     """
     CREATE INDEX idx_note_text_with_pgroonga ON note USING pgroonga (text);
