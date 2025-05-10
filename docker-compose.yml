@@ -5,7 +5,7 @@ services:
       dockerfile: python.dockerfile
     container_name: mensis-python
     volumes:
-      - ./backup:/backup
+      - /mnt/hdd/misskey_backup:/backup
       - ./scripts:/scripts
       - ./penetration:/penetration
       - ./.env:/scripts/.env

@@ -413,6 +413,112 @@ def announcement_maintenance_start():
         logger.info("MAINTENANCE_ANNOUNCEMENT is set to false. Skipping announcement")
         return False
 
+def minio_backup():
+    """MinIOバケットのバックアップを実行する"""
+    dotenv.load_dotenv()
+    logger = setup_logger(name='minio_backup')
+    task_name = 'minio_backup'
+
+    MINIO_BACKUP = os.environ.get('MINIO_BACKUP')
+    
+    # Minioモジュールをインポート
+    from minio import auto_backup_minio, minio_backup_frequency_check
+
+    # 頻度設定に基づいてバックアップを実行するべきか確認
+    if not minio_backup_frequency_check(logger):
+        logger.info("本日はスケジュールに基づくMinIOバックアップを実行しません")
+        return False
+
+    if not MINIO_BACKUP:
+        logger.error("MINIO_BACKUP環境変数が設定されていません")
+        sendDM_misskey_notification("環境変数MINIO_BACKUPが設定されていません。")
+        return False
+    elif MINIO_BACKUP == "True":
+        # システムチェックを実行して、ディスク使用量を確認
+        system_check()
+        
+        connection_info = load_env()
+        
+        # バックアップディレクトリを設定
+        backup_dir = os.environ.get('BACKUP_DIR', '/backup')
+        minio_backup_dir = os.path.join(backup_dir, 'minio')
+        
+        # バックアップディレクトリの存在を確認
+        os.makedirs(minio_backup_dir, exist_ok=True)
+        
+        start_time = time.time()  # 開始時間を記録
+        
+        response, backup_size = auto_backup_minio(connection_info, logger, minio_backup_dir)
+        
+        end_time = time.time()  # 終了時間を記録
+        elapsed_time = end_time - start_time  # 経過時間を計算
+        
+        # 時間を見やすいフォーマットに変換（時:分:秒）
+        hours, remainder = divmod(elapsed_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+        
+        # システム状況を取得
+        disk = get_disk_usage()
+        
+        # 現在の時間を取得してフォーマット
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        if response:
+            backup_size_formatted = format_bytes(backup_size) if backup_size else "不明"
+            sendDM_misskey_notification(f"MinIOバケットのバックアップが完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\n出力サイズ：{backup_size_formatted}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+            record_task_result(task_name, True, f"処理時間: {time_str}, サイズ: {backup_size_formatted}")
+            logger.info(f"MinIOバックアップ完了 - 処理時間: {time_str}, サイズ: {backup_size_formatted}")
+        else:
+            sendDM_misskey_notification(f"MinIOバケットのバックアップに失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+            record_task_result(task_name, False, f"処理時間: {time_str}")
+            logger.error(f"MinIOバックアップ失敗 - 処理時間: {time_str}")
+    else:
+        logger.info("MINIO_BACKUPがFalseに設定されています。MinIOバックアップをスキップします")
+        return False
+
+def manual_backup_minio():
+    """MinIOバケットの手動バックアップを実行する"""
+    logger = setup_logger(name='manual_backup_minio')
+    
+    # Minioモジュールをインポート
+    from minio import manual_backup_minio as minio_manual_backup
+    
+    connection_info = load_env()
+    
+    # バックアップディレクトリを設定
+    backup_dir = os.environ.get('BACKUP_DIR', '/backup')
+    minio_backup_dir = os.path.join(backup_dir, 'minio')
+    
+    # バックアップディレクトリの存在を確認
+    os.makedirs(minio_backup_dir, exist_ok=True)
+    
+    start_time = time.time()  # 開始時間を記録
+    
+    response, backup_size = minio_manual_backup(connection_info, logger, minio_backup_dir)
+    
+    end_time = time.time()  # 終了時間を記録
+    elapsed_time = end_time - start_time  # 経過時間を計算
+    
+    # 時間を見やすいフォーマットに変換（時:分:秒）
+    hours, remainder = divmod(elapsed_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    time_str = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+    
+    # システム状況を取得
+    disk = get_disk_usage()
+    
+    # 現在の時間を取得してフォーマット
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    if response:
+        backup_size_formatted = format_bytes(backup_size) if backup_size else "不明"
+        sendDM_misskey_notification(f"MinIOバケットの手動バックアップが完了しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\n出力サイズ：{backup_size_formatted}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+        logger.info(f"MinIO手動バックアップ完了 - 処理時間: {time_str}, サイズ: {backup_size_formatted}")
+    else:
+        sendDM_misskey_notification(f"MinIOバケットの手動バックアップに失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
+        logger.error(f"MinIO手動バックアップ失敗 - 処理時間: {time_str}")
+
 # 利用可能なタスクの辞書
 TASKS = {
     'morning_print': morning_print,
@@ -424,8 +530,9 @@ TASKS = {
     'system_check': system_check,
     'daily_maintenance_report': daily_maintenance_report,
     'announcement_maintenance_start': announcement_maintenance_start,
-    'user_file_reindex': user_file_reindex
-
+    'user_file_reindex': user_file_reindex,
+    'minio_backup': minio_backup,
+    'manual_backup_minio': manual_backup_minio
 }
 
 def main():
@@ -447,6 +554,9 @@ def main():
     schedule.every().day.at("06:00").do(lambda: auto_backup_postgres(backup_type="monthly") if datetime.now().day == 1 else None)
     # 毎朝8時にメンテナンスレポートを送信
     schedule.every().day.at("08:00").do(daily_maintenance_report)
+    schedule.every().day.at("09:00").do(minio_backup)  # MinIOバックアップを毎日9時に実行
+    # 毎週日曜日の2時に手動MinIOバックアップ
+    schedule.every().sunday.at("02:00").do(manual_backup_minio)
 
     # スケジューラー起動をログに記録
     # 現在の時間を取得してフォーマット
