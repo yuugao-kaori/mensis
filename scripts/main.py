@@ -519,6 +519,18 @@ def manual_backup_minio():
         sendDM_misskey_notification(f"MinIOバケットの手動バックアップに失敗しました。\n\n現在時間：{current_time}\n処理時間: {time_str}\nディスク使用率: {disk['percent']}%\n空き容量: {format_bytes(disk['free'])}")
         logger.error(f"MinIO手動バックアップ失敗 - 処理時間: {time_str}")
 
+def check_minio_connection():
+    """MinIOバケットの手動バックアップを実行する"""
+    logger = setup_logger(name='check_minio_connection')
+    
+    # Minioモジュールをインポート
+    from minio import check_minio_connection as check_minio_connection
+    
+    connection_info = load_env()
+    check_minio_connection(connection_info, logger)
+
+
+
 # 利用可能なタスクの辞書
 TASKS = {
     'morning_print': morning_print,
@@ -531,6 +543,7 @@ TASKS = {
     'daily_maintenance_report': daily_maintenance_report,
     'announcement_maintenance_start': announcement_maintenance_start,
     'user_file_reindex': user_file_reindex,
+    'check_minio_connection': check_minio_connection,
     'minio_backup': minio_backup,
     'manual_backup_minio': manual_backup_minio
 }

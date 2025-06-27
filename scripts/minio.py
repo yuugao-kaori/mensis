@@ -1,4 +1,3 @@
-
 import os
 import time
 import datetime
@@ -22,7 +21,7 @@ def check_minio_connection(connection_info, logger):
     try:
         # 環境変数を設定して、mc configコマンドを実行
         env = os.environ.copy()
-        env["MC_HOST_mensis"] = f"http://{connection_info['MINIO_ACCESS_KEY']}:{connection_info['MINIO_SECRET_KEY']}@{connection_info['MINIO_HOST']}:{connection_info['MINIO_PORT']}"
+        env["MC_HOST_mensis"] = f"http://{connection_info['minio_access_key']}:{connection_info['minio_secret_key']}@{connection_info['minio_host']}:{connection_info['minio_port']}"
 
         # mcコマンドが利用可能か確認
         try:
@@ -38,7 +37,10 @@ def check_minio_connection(connection_info, logger):
             return False
             
         # mcコマンドでMinIOへの接続を確認
-        result = subprocess.run(["mc", "ls", f"mensis/{connection_info['MINIO_BUCKET']}"], 
+        ls_command = ["mc", "ls", f"mensis/{connection_info['minio_bucket']}"]
+        logger.info(f"MinIO接続確認コマンドを実行: {' '.join(ls_command)}")
+        
+        result = subprocess.run(ls_command, 
                               stdout=subprocess.PIPE, 
                               stderr=subprocess.PIPE,
                               env=env,
@@ -95,12 +97,16 @@ def auto_backup_minio(connection_info, logger, backup_dir="/backup/minio"):
         
         # 環境変数を設定
         env = os.environ.copy()
-        env["MC_HOST_mensis"] = f"http://{connection_info['MINIO_ACCESS_KEY']}:{connection_info['MINIO_SECRET_KEY']}@{connection_info['MINIO_HOST']}:{connection_info['MINIO_PORT']}"
+        env["MC_HOST_mensis"] = f"http://{connection_info['minio_access_key']}:{connection_info['minio_secret_key']}@{connection_info['minio_host']}:{connection_info['minio_port']}"
         
         # バケットのバックアップを実行
-        logger.info(f"MinIOバケット {connection_info['MINIO_BUCKET']} のバックアップを開始します")
+        logger.info(f"MinIOバケット {connection_info['minio_bucket']} のバックアップを開始します")
+
+        mirror_command = ["mc", "mirror", f"mensis/{connection_info['minio_bucket']}", backup_path, "--overwrite"]
+        logger.info(f"バックアップコマンドを実行: {' '.join(mirror_command)}")
+        
         result = subprocess.run(
-            ["mc", "mirror", f"mensis/{connection_info['MINIO_BUCKET']}", backup_path, "--overwrite"],
+            mirror_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=env,
@@ -110,9 +116,10 @@ def auto_backup_minio(connection_info, logger, backup_dir="/backup/minio"):
         if result.returncode != 0:
             logger.error(f"MinIOバックアップ実行中にエラーが発生しました: {result.stderr}")
             return False, 0
-            
-        logger.info(f"MinIOバケット {connection_info['MINIO_BUCKET']} のバックアップが完了しました")
-        
+        else:
+            logger.info(f"バックアップコマンドが正常に完了しました")
+        logger.info(f"MinIOバケット {connection_info['minio_bucket']} のバックアップが完了しました")
+
         # バックアップサイズの計算
         total_size = 0
         for dirpath, dirnames, filenames in os.walk(backup_path):
@@ -124,7 +131,7 @@ def auto_backup_minio(connection_info, logger, backup_dir="/backup/minio"):
         logger.info(f"バックアップサイズ: {format_bytes(total_size)}")
         
         # 古いバックアップの削除処理
-        cleanup_old_backups(backup_dir, int(connection_info.get('MINIO_BACKUP_GENERATION', 12)), logger)
+        cleanup_old_backups(backup_dir, int(connection_info.get('minio_backup_generation', 12)), logger)
         
         return True, total_size
         
