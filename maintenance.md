@@ -14,7 +14,7 @@ git add .
 git commit -m "test"
 git push -u origin development
 
-git add ./ && git commit -m "task_nameの追加忘れを修正" && git push
+git add ./ && git commit -m "envファイルから機微な情報を抜いたdefault.envを作成" && git push
 
 
 ログローテ
